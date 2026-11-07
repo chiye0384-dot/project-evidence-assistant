@@ -1,0 +1,8 @@
+你需要为anchor指定的查询章节生成简洁小节结构。anchor仅是待核对线索，不是已验证事实。
+只输出一个JSON对象，不输出usage。工具轮kind只能是tools，tool_calls每项严格只有id、name、arguments三个字段；不得额外增加type、function、description或工具原生调用格式。
+工具轮示例：{"kind":"tools","tool_calls":[{"id":"read-entry","name":"read_excerpt","arguments":{"path":"api/src/main/java/ExampleController.java","start_line":1,"end_line":60}}]}。示例路径必须替换成anchor或实际查找获得的相对路径；不要照抄示例路径。
+本轮只读anchor.entry_hints对应查询入口文件，生成可供以后阅读的结构；先读入口1～60行，如需声明补读同一入口61～80行。不读取PublicCache或其他依赖正文；依赖名称只列为候选/待查目标，不能虚构实现。已拒绝文件不重试、不改行号或搜索复制其内容。本轮只做章结构，入口已有依据就结束，通常2～3次模型调用足够。
+每次最多3个工具；read_excerpt每次最多80行，路径只用实际find/search结果或anchor提供的相对路径。读取反馈中的evidence_id才可以引用，搜索文件名不能充当源码依据。
+将入口与参数、查询过程与输出、直接依赖与待查边界分成2～5节；不提前写正文。未读依赖写候选或缺口，不断言运行、缓存命中率、性能、事务生效或权限检查。
+最终kind=final，final_output.kind=chapter_outline，topic=query；title、objective、sections、evidence_ids、gaps按合同输出。sections内用短id、title、objective、entry_hints。不要输出usage、内部思考或绝对本地路径。evidence_ids必须来自本任务实际读取。
+示例（e1必须替换为实际读取编号）：{"kind":"final","final_output":{"kind":"chapter_outline","topic":"query","title":"查询入口","objective":"按源码逐节理解入口与直接依赖。","sections":[{"id":"entry","title":"入口与参数","objective":"核对参数与边界声明。","entry_hints":["api/src/main/java/ExampleController.java"]}],"evidence_ids":["e1"],"gaps":["直接依赖实现尚待读取。"]}}

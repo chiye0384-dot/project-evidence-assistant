@@ -1,0 +1,40 @@
+{
+  "notice": "Synthetic example only; never source evidence for a real task.",
+  "evidence": {
+    "evidence_id": "demo-fragment",
+    "start_line": 1,
+    "end_line": 5,
+    "truncated": false,
+    "excerpt": "boolean enabled = options.enabled();\nif (!enabled) {\n    return;\n}\ndeliver(payload);"
+  },
+  "semantic_block": {
+    "category": "processing",
+    "support": "fact",
+    "evidence_plan": {
+      "claim_kind": "branch",
+      "anchors": [
+        {"role": "condition", "evidence_id": "demo-fragment", "line_number": 2},
+        {"role": "target", "evidence_id": "demo-fragment", "line_number": 3}
+      ]
+    },
+    "evidence_ids": ["demo-fragment"],
+    "source_lines": [{"evidence_id": "demo-fragment", "line_numbers": "1,2,3,4"}],
+    "heading": "条件分支",
+    "text": "给enabled赋值；判断!enabled，条件成立时执行return。这里不推断options.enabled()的内部规则。"
+  },
+  "positive_block": {
+    "category": "processing",
+    "support": "fact",
+    "evidence_plan": {
+      "claim_kind": "branch",
+      "anchors": [
+        {"role": "condition", "evidence_id": "demo-fragment", "line_number": 2},
+        {"role": "target", "evidence_id": "demo-fragment", "line_number": 3}
+      ]
+    },
+    "evidence_ids": ["demo-fragment"],
+    "source_lines": [{"evidence_id": "demo-fragment", "line_numbers": "1,2,3,4"}],
+    "heading": "条件分支",
+    "text": "第1行给enabled赋值；第2行判断!enabled，条件成立时执行第3行的return。这里不推断options.enabled()的内部规则。"
+  }
+}

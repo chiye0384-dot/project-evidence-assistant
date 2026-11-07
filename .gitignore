@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.build-tmp/
+.verification/
+data/
+prices/*.json
+.env
+.env.*
+*.local
+*.sqlite*
+*.db
+*.log
+*.pem
+*.key

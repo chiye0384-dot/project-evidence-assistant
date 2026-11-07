@@ -1,0 +1,9 @@
+{
+  "src/project_evidence/deepseek_adapter.py": "38e5c613ef708c8ab33e865bf418f0e05a16979ddccaac7e9a08c3fc583afeae",
+  "src/project_evidence/agent_engine.py": "4e3c964027aa929bfff4c88544c17c96914a621de7c0e25f58f7e37e0fda4b95",
+  "src/project_evidence/task_service.py": "e1d32bf076e22bddeea12fbe4f09e285243eed6cc10b32fd37a16acaef10ff64",
+  "src/project_evidence/app.py": "28f5811cbd19257ac57b12b842acda9900388976ed3dae6b15fb4700372bd1e1",
+  "src/project_evidence/followup_scope_columns_codec.py": "4ac7bc265d107ed738bcfcf5d4b31d451916fd680ac34e29c81f8b1ed3a7cbaf",
+  "src/project_evidence/followup_scope_columns_baseline.py": "ae2c82a2f717f820cae0cffa042d1189a7c67c8ed3c1fbaaf319791486fd8fbe",
+  "src/project_evidence/followup_scope_columns.py": "1573100ede88c6167d1610890fbfeffc2736068a5a1a79cd45f21d5cf7ccab7b"
+}

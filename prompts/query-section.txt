@@ -1,0 +1,15 @@
+只讲解anchor.section_id指定的小节。anchor及历史结构仅提供目标和路径线索，必须在本任务读取片段再引用。
+只输出一个JSON对象，不输出usage。工具轮kind只能是tools，tool_calls每项严格只有id、name、arguments三个字段；不得额外增加type、function、description或工具原生调用格式。
+工具轮示例：{"kind":"tools","tool_calls":[{"id":"read-entry","name":"read_excerpt","arguments":{"path":"api/src/main/java/ExampleController.java","start_line":1,"end_line":60}}]}。路径替换为anchor或实际查找结果，不照抄示例。
+按所选节确定查阅范围：入口/参数节只读anchor.entry_hints对应入口1～60行，必要时补读同一入口61～80行；“查询与响应组装”节先读同一入口，再find_files定位片段实际引用的Mapper，并读取相应Mapper的有限静态SQL，必要时find/read返回记录声明。前一种通常2～3模型调用，后一种通常3～5次、最多8工具；保留结束预算。
+不读PublicCache；被拒绝文件不重试、不改行号或搜索复制内容。缓存回调触发条件一律保留未查证，不用方法名推断触发时机。其他未启用小节用final gap结束，不改为错误的入口正文。
+正文写清输入、代码处理、下一跳或输出，以及需要说明的机制/失败边界；只选择与当前节相关的block。源码静态声明用谨慎表述，未读实现保留缺口，不能把方法名当作执行时机证明。
+讲入口时将类级和方法级路径组合成完整HTTP方法与URL，不让读者自己拼接。完整检查本次读取片段的可见分支：不要说某分支是“唯一可见失败路径”，除非全部片段支持；入口校验失败与加载回调内的失败要区分。若同一片段可见其他失败，说明其所属阶段，不把已见内容当未读缺口。
+讲SQL与响应时逐项核对WHERE筛选、绑定参数、JOIN类型/关联、LIMIT、返回类型和控制器构造表达式；不要把SQL选出的字段都当已返回给用户，不把声明的过滤条件说成已验收鉴权，不断言运行映射、性能、缓存或部署成功。SQL注解与构造表达式能证明的只按源码声明表达。
+正文解释处理逻辑和字段来源，不逐字堆砌全部SELECT列。说明主表与当前版本关联、补充关联的用途及边界，必要的关系解释标inference并引用SQL，不推成真实运行结果。
+引用按段落匹配：说明方法的返回类型、参数注解或外部声明时，必须引用实际声明文件；不能只引用调用位置。跨文件说明SQL字段到返回组装时须同时引用Mapper与控制器；引用编号存在不能替代对应内容支持。
+查询与响应组装采用分段写法：控制器加载段仅说明调用、空结果处理及组装，不陈述被调用方法的声明返回类型；把Optional等声明返回类型集中到Mapper声明段，并引用Mapper。这可避免控制器调用点被当成Mapper签名证明。不要在控制器段重复写外部返回类型。
+每段block必须注明support为fact/documentation/inference/candidate/gap；前三者必须引用本任务真实读片段evidence_id。category=gap时support必须是gap。不虚构SQL、缓存行为、鉴权、运行效果或性能。
+最终kind=final，final_output.kind=section_explanation，topic=query，section_id必须完全等于anchor.section_id；title、blocks、gaps按合同输出。不输出usage、内部思考、绝对本地路径。
+下面示例中的section_id只是占位值，必须替换为本次anchor.section_id，不得照抄；长度条件按源码表达，不推断字节编码或真实运行权限。
+示例（e1替换为实际编号）：{"kind":"final","final_output":{"kind":"section_explanation","topic":"query","section_id":"entry","title":"入口与参数","blocks":[{"category":"inputs","heading":"输入声明","text":"片段声明了查询入口参数；运行行为仍需独立核对。","support":"fact","evidence_ids":["e1"]}],"gaps":["尚无运行验收。"]}}

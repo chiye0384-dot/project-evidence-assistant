@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>项目学习证据助手</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <header class="app-header">
+    <a class="brand" href="/" aria-label="项目学习证据助手首页">
+      <span class="brand-mark" aria-hidden="true">证</span>
+      <span>项目学习证据助手<span class="brand-subtitle">从源码到理解，留下依据</span></span>
+    </a>
+    <div class="header-status">
+      <span class="local-tag">本机学习空间</span>
+      <span class="connection" id="connection-status" role="status">正在连接后台</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="project-sidebar" aria-label="已登记项目">
+      <div class="sidebar-heading">
+        <div><p class="eyebrow">我的学习空间</p><h2>项目 <span id="project-count" class="count">0</span></h2></div>
+        <button id="refresh-button" class="icon-button" type="button" aria-label="刷新项目和后台状态" title="刷新项目和后台状态">↻</button>
+      </div>
+      <p class="sidebar-caption">选择一个项目，查看本机登记信息。</p>
+      <div id="project-list" class="project-list" aria-busy="true"><p class="list-message">正在读取登记记录…</p></div>
+      <a class="add-project-link" href="#register-form">＋ 登记新项目</a>
+      <div class="sidebar-note"><span class="note-symbol" aria-hidden="true">⌂</span><p>登记与证据保存在本机。<br>源码查阅需要手动核对版本。</p></div>
+    </aside>
+
+    <main id="main" class="workspace">
+      <section class="welcome" aria-labelledby="welcome-title">
+        <div class="welcome-copy"><p class="eyebrow">每一次理解，都有出处</p><h1 id="welcome-title">从认识一个项目开始</h1><p>先保存项目位置与公开版本，再逐步建立自己的学习记录。</p></div>
+        <div class="stage-label"><span class="stage-dot" aria-hidden="true"></span><span id="stage-label">正在确认阶段</span></div>
+      </section>
+
+      <section class="learning-route" aria-label="后续学习流程">
+        <div class="route-heading"><span>学习流程</span><span class="muted">先看目录，再按节阅读</span></div>
+        <ol><li><span class="route-number">01</span>认识项目</li><li><span class="route-number">02</span>选择章节</li><li><span class="route-number">03</span>阅读与追问</li><li><span class="route-number">04</span>继续学习</li></ol>
+      </section>
+
+      <p id="feedback" class="feedback" role="status" aria-live="polite" hidden></p>
+
+      <section class="card project-detail" aria-labelledby="detail-title">
+        <div class="card-heading"><div><p class="eyebrow">当前项目</p><h2 id="detail-title">选择你的学习对象</h2></div><span id="analysis-status" class="status-pill" hidden>尚未分析</span></div>
+        <div id="detail-empty" class="empty-state"><span class="empty-icon" aria-hidden="true">▤</span><h3>把项目放进学习空间</h3><p>登记本地项目后，在左侧选择它。这里会显示项目位置和固定公开版本。</p></div>
+        <div id="detail-content" hidden>
+          <dl class="project-metadata">
+            <div><dt>本地项目位置</dt><dd id="detail-path" class="mono"></dd></div>
+            <div><dt>公开源码仓库</dt><dd><span id="detail-url"></span><a id="repository-link" class="external-link" target="_blank" rel="noopener noreferrer" hidden>查看仓库 ↗</a></dd></div>
+            <div><dt>固定公开版本</dt><dd id="detail-commit" class="mono"></dd></div>
+            <div><dt>登记时间</dt><dd id="detail-created"></dd></div>
+          </dl>
+          <div class="detail-footer"><p><span class="small-dot" aria-hidden="true"></span><span id="detail-source-status">公开版本与本地源码尚未核对</span></p><button id="delete-button" class="text-button danger" type="button">删除助手记录</button></div>
+        </div>
+      </section>
+
+      <section id="task-panel" class="card task-panel" aria-labelledby="task-title" hidden>
+        <div class="card-heading"><div><p class="eyebrow">认识项目 · 目录任务</p><h2 id="task-title">学习目录任务</h2></div><span id="task-engine-status" class="status-pill neutral">状态待获取</span></div>
+        <p id="task-engine-message" class="section-intro" role="status">正在确认调用循环与模型状态。</p>
+        <div id="spending-panel" class="task-outcome" hidden><h3>模型费用</h3><p id="spending-summary" role="status"></p><p id="spending-notice" class="field-help"></p><button id="refresh-spending" class="secondary-button" type="button">刷新费用记录</button></div>
+        <div class="task-actions"><p>开始时由后台核对实际模型与源码条件。浏览历史记录不会调用模型，也不会重新读取源码。</p><div><button id="refresh-tasks" class="secondary-button" type="button" disabled>刷新任务记录</button><button id="start-task" class="primary-button" type="button" disabled>开始目录任务</button></div></div>
+        <p id="task-feedback" class="panel-message" role="status" aria-live="polite" hidden></p>
+        <div class="task-workspace"><div><h3 class="task-list-heading">本机任务记录 <span id="task-count" class="count">0</span></h3><p id="task-list-message" class="field-help" role="status">选择项目后查看历史任务。</p><div class="task-detail-actions"><button id="newer-tasks" class="secondary-button" type="button" disabled>较新记录</button><span id="task-page" class="field-help" aria-live="polite">第1页</span><button id="older-tasks" class="secondary-button" type="button" disabled>较早记录</button></div><div id="task-list" class="task-list"></div></div>
+          <div id="task-detail" class="task-detail" hidden><div class="card-heading"><h3 id="task-detail-title">目录任务</h3><span id="task-status" class="status-pill"></span></div><p id="task-mode" class="task-mode"></p><p id="task-message" class="task-message" role="status"></p><p id="task-review-note" class="warning-note" hidden></p><div id="task-outcome" class="task-outcome" hidden></div><dl id="task-counters" class="task-counters"></dl><div class="task-detail-actions"><p id="task-poll-status" class="field-help" role="status"></p><button id="cancel-task" class="text-button danger" type="button" disabled>取消本次任务</button></div><h4>有限行动记录</h4><p class="field-help">只展示工具与状态反馈，不展示模型内部思考或完整工具片段。</p><ol id="task-events" class="task-events"></ol><p id="task-events-message" class="field-help"></p></div>
+        </div>
+        <div id="task-directory" class="task-directory" hidden><div class="card-heading"><h3>历史学习目录</h3><span id="directory-review-status" class="status-pill neutral"></span></div><p id="directory-overview" class="directory-overview"></p><div id="directory-chapters" class="directory-chapters"></div><ul id="directory-gaps" class="limitations" hidden></ul><p class="field-help">关联证据编号可与源码证据核对。存在引用不代表它已支持章节结论；正文与正确性评测仍另行验收。</p></div>
+      </section>
+
+      <section id="learning-reader" class="card" aria-labelledby="reader-title" hidden>
+        <div class="card-heading"><div><p class="eyebrow">从目录进入正文</p><h2 id="reader-title">后端章节阅读</h2></div><span id="reader-status" class="status-pill neutral">状态待获取</span></div>
+        <p id="reader-message" class="section-intro" role="status">选择目录中的后端主题，先看小节结构，再逐节阅读。</p>
+        <div class="task-actions"><p>打开保存内容免费；仅点击已启用用途的生成按钮才会调用模型。</p><button id="refresh-learning" class="secondary-button" type="button" disabled>刷新学习记录</button></div>
+        <p id="reader-feedback" class="panel-message" role="status" aria-live="polite" hidden></p>
+        <div id="learning-records" class="learning-records"></div>
+        <div id="learning-content" hidden></div>
+      </section>
+
+      <div id="source-workspace" hidden>
+      <section class="card source-card" aria-labelledby="source-title">
+        <div class="card-heading"><div><p class="eyebrow">第一步 · 确认可查阅的版本</p><h2 id="source-title">公开源码核对</h2></div><span id="source-status" class="status-pill neutral">请选择项目</span></div>
+        <p id="source-description" class="section-intro">先在左侧选择项目，再手动核对公开仓库与固定提交。</p>
+        <div class="verify-row"><p class="network-note">访问 GitHub 公开 API 或官方公开网页，提取仓库与提交元数据；不上传本地源码，不调用模型或产生模型费用。通过后从本机读取获准公开版本的结构与片段。</p><button id="verify-source" class="primary-button" type="button" disabled>核对公开版本并读取结构</button></div>
+        <dl id="source-metadata" class="source-metadata" hidden><div><dt>已核对文件</dt><dd id="source-file-count"></dd></div><div><dt>核对时间</dt><dd id="source-verified-at"></dd></div><div><dt>当前本地提交</dt><dd id="source-head" class="mono"></dd></div><div><dt>仓库当前许可声明</dt><dd id="source-license"></dd></div></dl>
+        <p id="source-license-note" class="field-help" hidden></p>
+        <p id="source-change-note" class="warning-note" hidden></p>
+        <ul id="source-limitations" class="limitations" hidden></ul>
+        <form id="version-form" class="version-form"><div class="field"><label for="version-commit">换用另一个固定公开版本</label><input id="version-commit" class="mono" type="text" required pattern="[a-fA-F0-9]{40}" minlength="40" maxlength="40" placeholder="新版本的 40 位完整提交编号" spellcheck="false" aria-describedby="version-help"><p id="version-help" class="field-help">只更改助手选定的版本，不修改原项目或 Git。旧片段保留并标记需复核，新版本须重新手动核对。</p></div><button id="version-button" class="secondary-button" type="submit" disabled>更换助手选定版本</button></form>
+      </section>
+
+      <section class="card structure-card" aria-labelledby="structure-title">
+        <div class="card-heading"><div><p class="eyebrow">来自获准源码</p><h2 id="structure-title">结构事实</h2></div><span class="status-pill neutral">程序提取 · 非学习目录</span></div>
+        <p class="section-intro">这里展示源码中可查证的结构线索，不代表已经理解业务或生成正文。</p>
+        <p id="structure-message" class="panel-message" role="status">手动核对公开版本后，读取结构事实。</p>
+        <div id="structure-facts" class="structure-facts"></div>
+        <ul id="structure-limitations" class="limitations" hidden></ul>
+      </section>
+
+      <section class="card tools-card" aria-labelledby="tools-title">
+        <div class="card-heading"><div><p class="eyebrow">第二步 · 按需查阅</p><h2 id="tools-title">查找与保存源码依据</h2></div><span class="status-pill neutral">手动查阅 · 未调用模型</span></div>
+        <p id="tools-status" class="section-intro" role="status">尚未核对公开版本，源码工具不可用。</p>
+        <div class="tool-grid">
+          <form id="find-form" class="tool-form"><h3>查找文件</h3><div class="field"><label for="find-pattern">文件匹配规则</label><input id="find-pattern" type="text" required maxlength="300" placeholder="例如：**/*Controller.java" value="**/*Controller.java" aria-describedby="find-help" spellcheck="false"><p id="find-help" class="field-help">使用 * 匹配文件名，** 匹配多层目录。</p></div><button id="find-button" class="secondary-button" type="submit" disabled>查找文件</button></form>
+          <form id="search-form" class="tool-form"><h3>搜索内容</h3><div class="field"><label for="search-query">搜索文本</label><input id="search-query" type="text" required maxlength="300" placeholder="例如：@GetMapping" spellcheck="false"></div><div class="field"><label for="search-glob">文件范围 <span class="label-hint">可选</span></label><input id="search-glob" type="text" maxlength="300" placeholder="例如：**/*.java" spellcheck="false"></div><button id="search-button" class="secondary-button" type="submit" disabled>搜索内容</button></form>
+        </div>
+        <p id="tool-result-status" class="panel-message" role="status" hidden></p><div id="tool-results" class="tool-results"></div>
+        <form id="read-form" class="read-form"><h3>读取并保存片段</h3><p class="field-help">点击查找结果填入路径，或手动指定获准文件。读取后会在本机保存必要片段及其版本。</p><div class="read-fields"><div class="field"><label for="read-path">项目内相对路径</label><input id="read-path" type="text" required maxlength="1000" placeholder="例如：模块/src/main/java/ExampleController.java" spellcheck="false"></div><div class="field"><label for="read-start">起始行</label><input id="read-start" type="number" required min="1" max="1000000" value="1"></div><div class="field"><label for="read-end">结束行</label><input id="read-end" type="number" required min="1" max="1000000" value="80"></div></div><div class="read-footer"><p class="field-help">单次最多 80 行；过长内容请分段查阅。</p><button id="read-button" class="primary-button" type="submit" disabled>读取并保存片段</button></div></form>
+      </section>
+
+      <section class="card evidence-section" aria-labelledby="evidence-title">
+        <div class="card-heading"><div><p class="eyebrow">本机保存的来源</p><h2 id="evidence-title">源码证据 <span id="evidence-count" class="count">0</span></h2></div><span class="status-pill neutral">历史片段保留</span></div>
+        <p id="evidence-message" class="section-intro" role="status">选择项目后查看已保存证据。</p>
+        <div class="evidence-workspace"><div id="evidence-list" class="evidence-list"></div><div id="evidence-viewer" class="evidence-viewer" hidden><div class="snippet-heading"><h3 id="snippet-path" class="mono"></h3><span id="snippet-status" class="status-pill"></span></div><p id="snippet-location" class="snippet-location"></p><div class="code-frame"><pre id="snippet-lines" class="line-numbers" aria-hidden="true"></pre><pre class="snippet-code" tabindex="0" aria-label="保存的源码片段"><code id="snippet-text"></code></pre></div><dl class="snippet-metadata"><div><dt>固定公开版本</dt><dd id="snippet-commit" class="mono"></dd></div><div><dt>内容摘要</dt><dd id="snippet-sha" class="mono"></dd></div></dl><p class="field-help">片段存在只证明来源存在，尚未证明业务解释正确。</p></div></div>
+      </section>
+      </div>
+
+      <div class="lower-grid">
+        <section class="card register-card" aria-labelledby="register-title">
+          <div class="card-heading"><div><p class="eyebrow">添加学习对象</p><h2 id="register-title">登记本地项目</h2></div><span class="section-number" aria-hidden="true">＋</span></div>
+          <p class="section-intro">仅保存登记信息，不读取源码。请使用你有权学习的公开项目。</p>
+          <form id="register-form">
+            <div class="field"><label for="project-name">项目名称</label><input id="project-name" name="name" type="text" required maxlength="100" placeholder="例如：ForgeOJ" autocomplete="off"></div>
+            <div class="field"><label for="source-path">本地项目路径</label><input id="source-path" name="source_path" type="text" required maxlength="1000" placeholder="例如：D:\Java项目\ForgeOJ" aria-describedby="path-help" autocomplete="off" spellcheck="false"><p id="path-help" class="field-help">填写项目根目录的绝对路径。</p></div>
+            <div class="field"><label for="public-url">公开 GitHub 仓库</label><input id="public-url" name="public_url" type="url" required maxlength="500" placeholder="https://github.com/用户名/仓库名" aria-describedby="url-help" autocomplete="off" spellcheck="false"><p id="url-help" class="field-help">登记仓库地址；本地未提交内容不会自动视为公开源码。</p></div>
+            <div class="field"><label for="commit">固定公开提交 <span class="label-hint">commit</span></label><input id="commit" name="commit" class="mono" type="text" required pattern="[a-fA-F0-9]{40}" minlength="40" maxlength="40" placeholder="40 位完整提交编号" aria-describedby="commit-help" autocomplete="off" spellcheck="false"><p id="commit-help" class="field-help">在 GitHub 的提交详情中复制完整的 40 位编号。</p></div>
+            <div class="form-footer"><p id="registry-status">正在确认登记能力</p><button id="submit-button" class="primary-button" type="submit" disabled>保存登记 <span aria-hidden="true">→</span></button></div>
+          </form>
+        </section>
+
+        <section class="card learning-card" aria-labelledby="learning-title">
+          <div class="card-heading"><div><p class="eyebrow">学习内容</p><h2 id="learning-title">目录与正文</h2></div><span id="learning-status" class="status-pill neutral">状态待获取</span></div>
+          <div class="learning-placeholder"><div class="book-outline" aria-hidden="true"><span></span><span></span><span></span></div><h3>按章节阅读，逐步查证</h3><p id="learning-description">正在确认目录与章节入口的开放状态。</p></div>
+          <div class="model-state"><span class="small-dot muted-dot" aria-hidden="true"></span><strong id="model-status">模型状态待获取</strong><span>浏览已有记录不调用模型；开始目录任务会核对源码与费用条件。</span></div>
+          <p class="learning-note">后续会从工程概览进入具体章节，按小节查阅源码和依据，并在本机保存学习内容。</p>
+        </section>
+      </div>
+      <footer class="workspace-footer"><span>项目学习证据助手 · 本地单用户</span><span id="footer-stage">当前阶段待获取</span></footer>
+    </main>
+  </div>
+
+  <dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description">
+    <div class="dialog-heading"><span class="dialog-symbol" aria-hidden="true">!</span><h2 id="delete-title">删除这条助手记录？</h2></div>
+    <p id="delete-project-name" class="delete-project-name"></p>
+    <p id="delete-description">只删除本助手保存的项目登记、核对记录、源码证据与任务记录。原项目源码、Git、数据库和其他资源不会被删除。</p>
+    <div class="dialog-actions"><button id="cancel-delete" class="secondary-button" type="button">保留记录</button><button id="confirm-delete" class="danger-button" type="button">删除助手记录</button></div>
+  </dialog>
+</body>
+</html>

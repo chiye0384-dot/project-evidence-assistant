@@ -1,0 +1,2 @@
+MODE='java_scope_edge_unit_index_columns_v1'
+INDEX_FORMAT='java_scope_index_columns_v1'
