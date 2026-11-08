@@ -1,9 +1,11 @@
 {
-  "src/project_evidence/deepseek_adapter.py": "38e5c613ef708c8ab33e865bf418f0e05a16979ddccaac7e9a08c3fc583afeae",
-  "src/project_evidence/agent_engine.py": "4e3c964027aa929bfff4c88544c17c96914a621de7c0e25f58f7e37e0fda4b95",
-  "src/project_evidence/task_service.py": "e1d32bf076e22bddeea12fbe4f09e285243eed6cc10b32fd37a16acaef10ff64",
-  "src/project_evidence/app.py": "28f5811cbd19257ac57b12b842acda9900388976ed3dae6b15fb4700372bd1e1",
+  "src/project_evidence/deepseek_adapter.py": "0d5dad06fecf58b95eb8887ae1ac4b73748f4fc0623c4212c4543ad2b3cc6b3b",
+  "src/project_evidence/agent_engine.py": "0c2e651327be332c4100052c8be30bf5d5f85912ae1ea47d6d76c7407daf260b",
+  "src/project_evidence/task_service.py": "9baaaa7541030f760c28d3bf173046d1a6dccd0045eb2f5edd858ea05503f8aa",
+  "src/project_evidence/app.py": "671f78d6ec798dc4d61fd088b323beb6e52fa35060019f6b7f07298be72def8a",
   "src/project_evidence/followup_scope_columns_codec.py": "4ac7bc265d107ed738bcfcf5d4b31d451916fd680ac34e29c81f8b1ed3a7cbaf",
   "src/project_evidence/followup_scope_columns_baseline.py": "ae2c82a2f717f820cae0cffa042d1189a7c67c8ed3c1fbaaf319791486fd8fbe",
-  "src/project_evidence/followup_scope_columns.py": "1573100ede88c6167d1610890fbfeffc2736068a5a1a79cd45f21d5cf7ccab7b"
+  "src/project_evidence/followup_scope_columns.py": "1573100ede88c6167d1610890fbfeffc2736068a5a1a79cd45f21d5cf7ccab7b",
+  "src/project_evidence/followup_table_contract.py": "87d2f2c30a42d368ee17e5f65524317255b8cddf3c29a8c1ea6861c0d1b6ab3d",
+  "src/project_evidence/followup_prose_kind.py": "64571978697fc1459812f7bbd9635e252e63f2daacfc84735bda7cdda0cf3629"
 }

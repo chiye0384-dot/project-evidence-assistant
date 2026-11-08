@@ -4,8 +4,18 @@ import json
 from project_evidence.followup_prose_wire import phase_schema as literal_schema,assemble as original_assemble
 from project_evidence.followup_claim_parts import phase_schema as parts_schema
 from project_evidence.phase_diagnostics import PhaseContractError
+from project_evidence.followup_prose_wire import PROSE_NOTICE
+from project_evidence.followup_two_phase import rendering_payload
 
 FORMAT='kind_prose_v1'
+FLAT_FORMAT='flat_prose_v1'
+FLAT_KEYS = {'block_index': 'i', 'heading': 'h', 'text': 't'}
+FLAT_NOTICE = (
+    '本轮正文使用平铺字段。成功action只含kind=prose和blocks。'
+    '若冻结N块，blocks必须且只能包含i1,h1,t1至iN,hN,tN。'
+    'iK为整数K，hK为第K块标题，tK为第K块正文。blocks各字段直接对应值，不再套块对象。'
+    '严格对应各块冻结结论及引用，保持完整事实与原文字长度。缺证据可返回原final gap或clarify。'
+)
 NOTICE=('新正文载体kind_prose_v1：成功正文action必须且只能包含kind与blocks两个字段，kind固定为字符串prose。'
     'blocks仍是block_1至block_N的冻结索引对象，每块仍只能含block_index、heading、text。'
     '不能增加status、final_output或其他顶层字段；不能把kind放入blocks或单块。'
@@ -38,3 +48,44 @@ def assemble(frozen,action):
     except (ValueError,TypeError):raise PhaseContractError('prose_shape') from None
     if len(raw)>128000:raise PhaseContractError('phase_payload_limit')
     return original_assemble(frozen,dict(blocks=deepcopy(action['blocks'])))
+
+
+def flat_phase_schema(context, phase, block_count=None, *, planning_format='literal'):
+    result = phase_schema(context, phase, block_count, planning_format=planning_format)
+    if phase != 'prose':
+        return result
+    slots = result['oneOf'][0]['properties']['blocks']
+    flat = {}
+    for index, block in enumerate(slots['properties'].values(), 1):
+        flat.update({f'{FLAT_KEYS[name]}{index}': field for name, field in block['properties'].items()})
+    slots.update(properties=flat, required=list(flat))
+    return result
+
+
+def flat_prose_instruction(text):
+    if text.count(PROSE_NOTICE) != 1:
+        raise PhaseContractError('prose_shape')
+    transformed = prose_instruction(text).replace(PROSE_NOTICE, FLAT_NOTICE, 1)
+    if not transformed.endswith('\n' + NOTICE):
+        raise PhaseContractError('prose_shape')
+    return transformed.removesuffix('\n' + NOTICE)
+
+
+def assemble_flat(frozen, action):
+    """Decode only the explicitly selected flat carrier; never infer a format."""
+    if type(action) is not dict or set(action) != {'kind', 'blocks'} or action['kind'] != 'prose':
+        raise PhaseContractError('prose_shape')
+    try:
+        size = len(json.dumps(action, ensure_ascii=False, allow_nan=False).encode('utf-8'))
+    except (TypeError, ValueError):
+        raise PhaseContractError('prose_shape') from None
+    if size > 128_000:
+        raise PhaseContractError('phase_payload_limit')
+    count = len(rendering_payload(frozen)['plan']['blocks'])
+    required = {f'{prefix}{index}' for index in range(1, count + 1) for prefix in FLAT_KEYS.values()}
+    blocks = action['blocks']
+    if type(blocks) is not dict or set(blocks) != required:
+        raise PhaseContractError('block_count')
+    decoded = {f'block_{index}': {name: blocks[f'{prefix}{index}'] for name, prefix in FLAT_KEYS.items()}
+               for index in range(1, count + 1)}
+    return assemble(frozen, dict(kind='prose', blocks=decoded))

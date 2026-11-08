@@ -32,6 +32,7 @@ from .task_diagnostics import citation_details
 from .citation_evidence_slots import evidence_slots
 from .followup_two_phase import PhaseResponse, freeze_plan, rendering_payload
 from .followup_prose_kind import FORMAT as PROSE_FORMAT, assemble as assemble_prose_kind
+from .followup_prose_kind import FLAT_FORMAT, assemble_flat
 from .followup_claim_parts import FORMAT as PARTS_FORMAT, freeze_plan as freeze_parts_plan
 from .followup_prose_wire import assemble
 from .phase_diagnostics import PhaseContractError, PHASE_REASONS, safe_wire_diagnostics
@@ -392,7 +393,8 @@ class _Runner:
         if terminal is not None:
             return terminal
         self._checkpoint()
-        render = assemble_prose_kind if getattr(self.adapter, 'followup_prose_format', 'indexed') == PROSE_FORMAT else assemble
+        prose_format = getattr(self.adapter, 'followup_prose_format', 'indexed')
+        render = assemble_flat if prose_format == FLAT_FORMAT else assemble_prose_kind if prose_format == PROSE_FORMAT else assemble
         content = self._phase_checked('prose', 'assemble', lambda: render(frozen, prose))
         return ModelTurn(kind='final', final_output=content)
 

@@ -26,6 +26,7 @@ from .followup_read_context import planning_context_view
 from .followup_claim_wording import CLAIM_WORDING_NOTICE
 from .followup_parts_instruction import planning_instruction as parts_planning_instruction
 from .followup_prose_kind import FORMAT as PROSE_FORMAT, phase_schema as prose_kind_schema, prose_instruction as kind_prose_instruction
+from .followup_prose_kind import FLAT_FORMAT, flat_phase_schema, flat_prose_instruction
 from .followup_claim_parts import FORMAT as PARTS_FORMAT, NOTICE as PARTS_NOTICE, phase_schema as parts_phase_schema
 from .deepseek_network import checked_proxy_port, client_options, public_route
 from . import java_scope_edges
@@ -178,8 +179,8 @@ class DeepSeekAdapter:
         if (type(followup_claim_format) is not str or followup_claim_format not in ('literal', PARTS_FORMAT, table_contract.FORMAT)
                 or (followup_claim_format in (PARTS_FORMAT, table_contract.FORMAT) and followup_protocol != 'two_phase')):
             raise ValueError('Invalid planning format; explicit two_phase follow-up is required.')
-        if (type(followup_prose_format) is not str or followup_prose_format not in ('indexed', PROSE_FORMAT)
-                or (followup_prose_format == PROSE_FORMAT and followup_protocol != 'two_phase')):
+        if (type(followup_prose_format) is not str or followup_prose_format not in ('indexed', PROSE_FORMAT, FLAT_FORMAT)
+                or (followup_prose_format in (PROSE_FORMAT, FLAT_FORMAT) and followup_protocol != 'two_phase')):
             raise ValueError('Invalid prose format; explicit two_phase follow-up is required.')
         self.followup_prose_format = followup_prose_format
         if (type(followup_scope_view) is not str or followup_scope_view not in ('off', SCOPE_FORMAT, COLUMNS_FORMAT, INDEX_FORMAT)
@@ -371,14 +372,16 @@ class DeepSeekAdapter:
             count = len(payload['plan']['blocks']) if phase == 'prose' else None
             schema = (parts_phase_schema(context, phase, count) if self.followup_claim_format in (PARTS_FORMAT, table_contract.FORMAT)
                       else phase_schema(context, phase, count))
-            if self.followup_prose_format == PROSE_FORMAT:
-                schema = prose_kind_schema(context, phase, count, planning_format=PARTS_FORMAT if self.followup_claim_format == table_contract.FORMAT else self.followup_claim_format)
+            if self.followup_prose_format in (PROSE_FORMAT, FLAT_FORMAT):
+                prose_schema = flat_phase_schema if self.followup_prose_format == FLAT_FORMAT else prose_kind_schema
+                schema = prose_schema(context, phase, count, planning_format=PARTS_FORMAT if self.followup_claim_format == table_contract.FORMAT else self.followup_claim_format)
             view = planning_context_view(context) if phase == 'plan_or_tools' else context_view(context)
             instruction = context.system_instruction + self._guidance + '\n' + (PROSE_NOTICE if phase == 'prose' else CLAIM_WORDING_NOTICE)
             if phase == 'plan_or_tools' and self.followup_claim_format in (PARTS_FORMAT, table_contract.FORMAT):
                 instruction = parts_planning_instruction(instruction) + '\n' + PARTS_NOTICE
-            if phase == 'prose' and self.followup_prose_format == PROSE_FORMAT:
-                instruction = kind_prose_instruction(instruction)
+            if phase == 'prose' and self.followup_prose_format in (PROSE_FORMAT, FLAT_FORMAT):
+                prose_instruction = flat_prose_instruction if self.followup_prose_format == FLAT_FORMAT else kind_prose_instruction
+                instruction = prose_instruction(instruction)
             if phase == 'plan_or_tools' and self.followup_claim_format == table_contract.FORMAT:
                 instruction = table_contract.rewrite_system(instruction, prose_format=self.followup_prose_format)
                 schema = table_contract.schema(context)

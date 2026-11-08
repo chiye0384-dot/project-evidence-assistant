@@ -37,8 +37,11 @@ def main() -> None:
                         help='显式启用selected_parts_v1规划载体；只适用于已启用的两阶段追问')
     parser.add_argument('--followup-selected-table', action='store_true',
                         help='显式启用selected_table_v1选行表；只适用于两阶段追问，与claim-parts开关互斥')
-    parser.add_argument('--followup-prose-kind', action='store_true',
+    prose_modes = parser.add_mutually_exclusive_group()
+    prose_modes.add_argument('--followup-prose-kind', action='store_true',
                         help='显式启用kind_prose_v1正文载体；只适用于已启用的两阶段追问')
+    prose_modes.add_argument('--followup-prose-flat', action='store_true',
+                        help='显式启用flat_prose_v1平铺正文载体；只适用于两阶段追问，与prose-kind互斥')
     parser.add_argument('--followup-scope-view', action='store_true',
                         help='显式附加受限Java词法位置视图；仅适用于两阶段追问，仍执行原预算与引用校验')
     parser.add_argument('--followup-scope-columns', action='store_true',
@@ -54,7 +57,7 @@ def main() -> None:
         parser.error('选行表需要显式two_phase且不能同时启用claim-parts；未读取密钥或创建授权。')
     if args.followup_scope_view and not args.followup_two_phase:
         parser.error('位置视图需要显式two_phase；未读取密钥或创建授权。')
-    if args.followup_prose_kind and not args.followup_two_phase:
+    if (args.followup_prose_kind or args.followup_prose_flat) and not args.followup_two_phase:
         parser.error('正文类型载体需要显式two_phase；未读取密钥或创建授权。')
     if args.followup_claim_parts and not args.followup_two_phase:
         parser.error('定位片段载体需要显式two_phase；未读取密钥或创建授权。')
@@ -115,7 +118,8 @@ def main() -> None:
             network_options = {'proxy_port': args.deepseek_proxy_port} if args.deepseek_proxy_port else {}
             claim_options = ({'followup_claim_format': 'selected_table_v1'} if args.followup_selected_table else
                              {'followup_claim_format': 'selected_parts_v1'} if args.followup_claim_parts else {})
-            prose_options = {'followup_prose_format': 'kind_prose_v1'} if args.followup_prose_kind else {}
+            prose_options = ({'followup_prose_format': 'flat_prose_v1'} if args.followup_prose_flat else
+                             {'followup_prose_format': 'kind_prose_v1'} if args.followup_prose_kind else {})
             scope_options = ({'followup_scope_view': 'java_scope_edge_unit_index_columns_v1'} if args.followup_index_columns else
                              {'followup_scope_view': 'java_scope_edge_unit_columns_v1'} if args.followup_scope_columns else
                              {'followup_scope_view': 'java_scope_edge_view_v1'} if args.followup_scope_view else {})

@@ -139,6 +139,104 @@ def observation(result):
     return {"call_id": "read-one", "name": "read_excerpt", "result": result}
 
 
+def _native_table_plan(active, *, unsupported=False):
+    return dict(kind='citation_plan', topic=active['topic'], section_id=active['section_id'],
+        title='合成追问', gaps=[], blocks=[dict(category='gap' if unsupported else 'processing',
+            support='gap' if unsupported else 'fact',
+            source_lines=[] if unsupported else [dict(evidence_id='piece-a', line_numbers='10,11,12')],
+            evidence_order=[] if unsupported else [1],
+            evidence_plan=dict(claim_kind='gap' if unsupported else 'source',
+                anchors=[] if unsupported else [dict(role='source', reference_index=1, line_index=1)]),
+            claim_parts=[dict(kind='text', text='暂缺调用方证据。' if unsupported else '第10行定义base。')])])
+
+
+@pytest.mark.parametrize('prose_format,problem', [
+    ('kind_prose_v1', None), ('flat_prose_v1', None),
+    ('flat_prose_v1', 'wrong_index'), ('flat_prose_v1', 'bool_index'),
+    ('flat_prose_v1', 'extra'), ('flat_prose_v1', 'nested_legacy'),
+    ('flat_prose_v1', 'missing'), ('flat_prose_v1', 'long_text'),
+    ('flat_prose_v1', 'unselected_line'), ('flat_prose_v1', 'gap_line'),
+])
+def test_native_two_phase_indexed_transport_keeps_billing_and_rejections(tmp_path, prose_format, problem):
+    from project_evidence.followup_prose_kind import FLAT_NOTICE, NOTICE
+    requests = []
+    def respond(request):
+        assert request.method == 'POST' and str(request.url) == 'https://api.deepseek.com/beta/chat/completions'
+        body = json.loads(request.content)
+        assert len(request.content) <= 128_000 and 'synthetic-flat-key' not in request.content.decode()
+        requests.append(body)
+        wrapper = json.loads(body['messages'][1]['content'])
+        if len(requests) == 1:
+            action = tool_turn(arguments=dict(path='src/Example.java', start_line=10, end_line=12))
+        elif wrapper['phase'] == 'plan_or_tools':
+            action = _native_table_plan(wrapper['context']['active_request'], unsupported=problem == 'gap_line')
+            if problem == 'gap_line':
+                action['blocks'][0]['claim_parts'][0]['text'] = '第13行的调用方尚未知。'
+            # Check the actual inlined native schema is tied to this read.
+            def refs(node):
+                if type(node) is dict:
+                    props = node.get('properties', {})
+                    if set(props) == {'evidence_id', 'line_numbers'}:
+                        assert props['evidence_id']['enum'] == ['piece-a']
+                    for child in node.values():refs(child)
+                elif type(node) is list:
+                    for child in node:refs(child)
+            refs(body['tools'][0]['function']['parameters'])
+        else:
+            flat = prose_format == 'flat_prose_v1'
+            assert (FLAT_NOTICE in body['messages'][0]['content']) == flat
+            assert (NOTICE in body['messages'][0]['content']) != flat
+            block = dict(block_index=1, heading='合成声明', text='第10行定义base。')
+            action = dict(kind='prose', blocks=dict(i1=1, h1=block['heading'], t1=block['text']) if flat else dict(block_1=block))
+            if problem == 'wrong_index':action['blocks']['i1'] = 2
+            if problem == 'bool_index':action['blocks']['i1'] = True
+            if problem == 'extra':action['blocks']['t2'] = '多余块'
+            if problem == 'nested_legacy':action['blocks'] = dict(block_1=block)
+            if problem == 'missing':action['blocks'].pop('h1')
+            if problem == 'long_text':action['blocks']['t1'] = '中' * 1201
+            if problem == 'unselected_line':action['blocks']['t1'] = '第13行定义base。'
+        return httpx.Response(200, json=dict(model='deepseek-flash', object='chat.completion',
+            usage=dict(prompt_tokens=10000, completion_tokens=1000, total_tokens=11000),
+            choices=[dict(finish_reason='tool_calls', message=dict(role='assistant', content=None,
+                tool_calls=[dict(id='fixture-call', type='function', function=dict(name='submit_action',
+                    arguments=json.dumps(dict(action=action), ensure_ascii=False)))]))]))
+    ledger = SpendingLedger(ProjectStore(tmp_path / 'native-cost'))
+    grant = ledger.authorize(confirmed=True, expires_at=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat())
+    instance = DeepSeekAdapter('synthetic-flat-key', ledger, grant, enable_query=True, enable_followup=True,
+        transport=httpx.MockTransport(respond), followup_protocol='two_phase',
+        followup_claim_format='selected_table_v1', followup_prose_format=prose_format,
+        followup_scope_view='java_scope_edge_unit_index_columns_v1').for_task('native-flat', goal=FOLLOW_UP_GOAL)
+    result = run(instance, tools=lambda *_: observed(), context=followup_context())
+    assert result.status == ('completed' if problem is None else 'failed')
+    assert not result.semantic_verified and result.counters.retries == 0
+    assert len(requests) == result.counters.model_calls == (2 if problem == 'gap_line' else 3)
+    with ledger.store._connection() as db:
+        rows = list(db.execute('SELECT state,charged FROM model_spend'))
+    assert len(rows) == len(requests) and all(row['state'] == 'settled' for row in rows)
+    assert sum(row['charged'] for row in rows) == 28_000 * len(requests)
+    if problem is None:
+        assert result.citations_validated and result.final_output.blocks[0].source_lines[0].lines == [10, 11, 12]
+    else:
+        assert result.final_output is None
+
+
+@pytest.mark.parametrize('mode', ['empty', 'complete', 'partial', 'duplicate'])
+def test_table_schema_uses_current_complete_reads_and_keeps_gap_text_only(mode):
+    from project_evidence.followup_table_contract import schema
+    result = observed(truncated=mode == 'partial')
+    observations = [] if mode == 'empty' else [observation(result)]
+    if mode == 'duplicate': observations.append(observation(result))
+    value = schema(followup_context(observations))
+    reference = value['$defs']['SourceLineReference']['properties']['evidence_id']
+    assert reference.get('enum', []) == (['piece-a'] if mode in ('complete', 'duplicate') else [])
+    branches = value['$defs']['FollowUpBlock']['oneOf']
+    for branch in branches[1:]:
+        item = branch['properties']['claim_parts']['items']
+        assert set(item['properties']) == {'kind', 'text'}
+        assert item['properties']['kind']['const'] == 'text'
+    assert len(branches[0]['properties']['claim_parts']['items']['oneOf']) == 2
+
+
 def test_model_display_numbers_lines_without_mutating_source_or_metadata(tmp_path):
     instance, _, _ = adapter(tmp_path)
     context = followup_context([observation(observed())]); before = context.model_dump()

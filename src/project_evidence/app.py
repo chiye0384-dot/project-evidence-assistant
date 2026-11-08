@@ -46,7 +46,7 @@ def create_app(data_dir: Path | None = None, *, github_transport: httpx.BaseTran
         yield
         tasks.shutdown()
 
-    app = FastAPI(title="项目学习证据助手", version="0.4.0", lifespan=lifespan)
+    app = FastAPI(title="项目学习证据助手", version="0.4.1", lifespan=lifespan)
     app.state.project_store = store
     app.state.source_service = sources
     app.state.task_service = tasks
@@ -115,8 +115,8 @@ def create_app(data_dir: Path | None = None, *, github_transport: httpx.BaseTran
                     "spending": tasks.adapter.public_status()}
             if getattr(tasks.adapter, 'followup_claim_format', 'literal') in ('selected_parts_v1', 'selected_table_v1'):
                 result['followup_claim_format'] = tasks.adapter.followup_claim_format
-            if getattr(tasks.adapter, 'followup_prose_format', 'indexed') == 'kind_prose_v1':
-                result['followup_prose_format'] = 'kind_prose_v1'
+            if getattr(tasks.adapter, 'followup_prose_format', 'indexed') in ('kind_prose_v1', 'flat_prose_v1'):
+                result['followup_prose_format'] = tasks.adapter.followup_prose_format
             if getattr(tasks.adapter, 'followup_scope_view', 'off') in ('java_scope_edge_view_v1', 'java_scope_edge_unit_columns_v1', 'java_scope_edge_unit_index_columns_v1'):
                 result['followup_scope_view'] = tasks.adapter.followup_scope_view
             route = getattr(tasks.adapter, 'network_route', None)

@@ -38,6 +38,42 @@ def test_default_does_not_enable_existing_api_key(tmp_path, monkeypatch):
     assert not (tmp_path / "data").exists()
 
 
+@pytest.mark.parametrize('flags', [
+    ['--followup-prose-flat'],
+    ['--followup-prose-flat', '--followup-prose-kind'],
+    ['--followup-prose-flat', '--followup-two-phase'],
+])
+def test_flat_prose_invalid_opt_ins_stop_before_key_grant_or_server(tmp_path, monkeypatch, flags):
+    startup, captures = load_startup(tmp_path, monkeypatch, flags)
+    with pytest.raises(SystemExit) as error:
+        startup.main()
+    assert error.value.code == 2 and captures == {} and not (tmp_path / 'data').exists()
+
+
+def test_flat_prose_explicit_startup_exposes_selected_format_without_dispatch(tmp_path, monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'synthetic-local-flat-key')
+    prices = tmp_path / 'prices'
+    prices.mkdir()
+    (prices / 'deepseek-verified.json').write_text(json.dumps(price_proof()), encoding='utf-8')
+    startup, captures = load_startup(tmp_path, monkeypatch, [
+        '--enable-paid-model', '--enable-query-model', '--enable-followup-model', '--followup-two-phase',
+        '--followup-selected-table', '--followup-prose-flat', '--followup-index-columns'])
+    startup.main()
+    adapter = captures['model_adapter']
+    assert adapter.followup_prose_format == 'flat_prose_v1'
+    assert adapter.followup_claim_format == 'selected_table_v1'
+    assert adapter.followup_scope_view == 'java_scope_edge_unit_index_columns_v1'
+    with adapter.ledger.store._connection() as db:
+        assert db.execute('SELECT count(*) FROM model_spend').fetchone()[0] == 0
+    # Inspect the real status endpoint without the startup factory patch.
+    monkeypatch.undo()
+    with TestClient(app_module.create_app(tmp_path / 'status-data', model_adapter=adapter),
+                    base_url='http://localhost:8123') as client:
+        status = client.get('/api/model/status').json()
+    assert status['followup_prose_format'] == 'flat_prose_v1'
+    assert 'synthetic-local-flat-key' not in json.dumps(status)
+
+
 def test_opt_in_without_key_does_not_start_server_or_grant(tmp_path, monkeypatch, capsys):
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     startup, captures = load_startup(tmp_path, monkeypatch, ["--enable-paid-model"])

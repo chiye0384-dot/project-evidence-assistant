@@ -42,26 +42,40 @@ ANCHOR_AFTER=('One-based block-local selected-line pointers, not absolute coordi
     'Preserve anchor order and all required roles; at most8 anchors, with no automatic selection.')
 ORDER_DESCRIPTION=('Permutation of1..len(source_lines), empty with no references. '
     'Preserves expanded evidence_ids order; evidence_ids is not a submitted field.')
+POINTER_NOTICE=(
+    '先在本块source_lines选源码绝对行号，再填指针。reference_index是本块source_lines的第几项，'
+    'line_index是该项line_numbers中的第几个数；evidence_order不重排指针。'
+    '例如本块第2项line_numbers为"54,88"，指向源码第88行应填reference_index=2、line_index=2。'
+    '锚点和position都用这套序号；源码行号、词法视图的shape_index和其他块的序号不能当作指针。'
+)
+UNSUPPORTED_NOTICE=(
+    '缺口和无依据候选没有本块源码引用，只用text声明未知或待核实事项。'
+    '其中不能断言具体源码事实，也不能写“第N行”等具体源码位置；'
+    '需要具体源码位置的事实必须放在有完整支持引用的块中。'
+    '有引用块仍须保留必要定位，不能为通过检查删除事实或隐去编号。'
+)
+GENERATION_NOTICE = POINTER_NOTICE + UNSUPPORTED_NOTICE
 
 def rewrite_system(system,*,prose_format='kind_prose_v1'):
     need(isinstance(system,str))
-    need(prose_format in ('indexed','kind_prose_v1'))
+    need(prose_format in ('indexed','kind_prose_v1','flat_prose_v1'))
     need(system.endswith('\n'+PARTS_NOTICE))
     need(RULES not in system)
     result=system
     for _,_,before,after in REPLACEMENTS:
         need(result.count(before)==1 and after not in result)
         result=result.replace(before,after,1)
-    if prose_format=='kind_prose_v1':
+    if prose_format in ('kind_prose_v1','flat_prose_v1'):
         need(result.count(PROSE_LEGACY)==1 and PROSE_DECLARED not in result)
         result=result.replace(PROSE_LEGACY,PROSE_DECLARED,1)
-    return result+'\n'+RULES
+    return result+'\n'+RULES+'\n'+GENERATION_NOTICE
 
 def restore_system(system,*,prose_format='kind_prose_v1'):
-    need(isinstance(system,str) and system.endswith('\n'+RULES))
-    need(prose_format in ('indexed','kind_prose_v1'))
-    result=system[:-len('\n'+RULES)]
-    if prose_format=='kind_prose_v1':
+    suffix='\n'+RULES+'\n'+GENERATION_NOTICE
+    need(isinstance(system,str) and system.endswith(suffix))
+    need(prose_format in ('indexed','kind_prose_v1','flat_prose_v1'))
+    result=system[:-len(suffix)]
+    if prose_format in ('kind_prose_v1','flat_prose_v1'):
         need(result.count(PROSE_DECLARED)==1 and PROSE_LEGACY not in result)
         result=result.replace(PROSE_DECLARED,PROSE_LEGACY,1)
     for _,_,before,after in reversed(REPLACEMENTS):
@@ -98,7 +112,7 @@ def _table_schema(context):
     return value
 
 def schema(context):
-    """Same162 A typed shape; only clarify descriptions and generation order."""
+    """Select current evidence IDs and disallow unsupported position pointers."""
     value=_table_schema(context)
     stats=dict(blocks=0,anchors=0)
     def walk(node):
@@ -117,5 +131,33 @@ def schema(context):
             for item in node.values():walk(item)
     walk(value)
     need(stats==dict(blocks=3,anchors=len(CLAIM_ROLES)))
+    _restrict_current_reads_and_unsupported(value, context)
     return value
+
+
+def _restrict_current_reads_and_unsupported(value, context):
+    """Narrow generation choices; original local citation checks still apply."""
+    identifiers=[]
+    for observation in context.observations:
+        item=observation.result
+        if (observation.name=='read_excerpt' and item.get('status')=='ok'
+                and item.get('truncated') is False and item.get('evidence_id') not in identifiers):
+            identifiers.append(item['evidence_id'])
+    def visit(node):
+        if type(node) is list:
+            for child in node:visit(child)
+        elif type(node) is dict:
+            props=node.get('properties',{})
+            if set(props)=={'evidence_id','line_numbers'} and identifiers:
+                props['evidence_id']['enum']=list(identifiers)
+            if 'claim_parts' in props and 'evidence_plan' in props:
+                kind=props['evidence_plan'].get('properties',{}).get('claim_kind',{}).get('const')
+                if kind in ('gap','unverified'):
+                    variants=props['claim_parts']['items']['oneOf']
+                    need(len(variants)==2 and variants[0]['properties']['kind']['const']=='text')
+                    literal=variants[0]
+                    literal['properties']['text']['description']=UNSUPPORTED_NOTICE
+                    props['claim_parts']['items']=literal
+            for child in node.values():visit(child)
+    visit(value)
 

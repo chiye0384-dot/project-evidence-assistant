@@ -235,7 +235,7 @@ class TaskService:
             protocol = getattr(adapter, 'followup_protocol', None)
             if context.goal == FOLLOW_UP_GOAL and protocol in {'strict_function', 'two_phase'}:
                 self.history.update(record.id, task_id, event={"kind": "transport_selected",
-                    "message": "追问传输：" + protocol + ("；规划格式：" + adapter.followup_claim_format if getattr(adapter, "followup_claim_format", "literal") in ("selected_parts_v1", "selected_table_v1") else "") + ("；正文格式：kind_prose_v1" if getattr(adapter, "followup_prose_format", "indexed") == "kind_prose_v1" else "") + ("；位置视图：" + adapter.followup_scope_view if getattr(adapter, "followup_scope_view", "off") in ("java_scope_edge_view_v1", "java_scope_edge_unit_columns_v1", "java_scope_edge_unit_index_columns_v1") else "") + "；只接受固定动作载体，仍执行原引用校验。"})
+                    "message": "追问传输：" + protocol + ("；规划格式：" + adapter.followup_claim_format if getattr(adapter, "followup_claim_format", "literal") in ("selected_parts_v1", "selected_table_v1") else "") + ("；正文格式：" + adapter.followup_prose_format if getattr(adapter, "followup_prose_format", "indexed") in ("kind_prose_v1", "flat_prose_v1") else "") + ("；位置视图：" + adapter.followup_scope_view if getattr(adapter, "followup_scope_view", "off") in ("java_scope_edge_view_v1", "java_scope_edge_unit_columns_v1", "java_scope_edge_unit_index_columns_v1") else "") + "；只接受固定动作载体，仍执行原引用校验。"})
             outcome = run_agent(adapter, execute, guard, cancelled, self.limits,
                                 record_event, context)
             payload = outcome.model_dump(mode="json")

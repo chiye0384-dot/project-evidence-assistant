@@ -1,4 +1,4 @@
-param([ValidateRange(1,65535)][int]$Port = 8765, [switch]$EnableQuery, [switch]$EnableSubmission, [switch]$EnableConsumption, [switch]$EnableJudging, [switch]$EnableFollowUp, [switch]$CheckAccess, [switch]$FollowUpStrictFunction, [switch]$FollowUpTwoPhase, [switch]$FollowUpClaimParts, [switch]$FollowUpProseKind, [switch]$FollowUpScopeView, [switch]$FollowUpScopeColumns, [switch]$FollowUpIndexColumns, [switch]$FollowUpSelectedTable, [ValidateRange(0,65535)][int]$ProxyPort = 0)
+param([ValidateRange(1,65535)][int]$Port = 8765, [switch]$EnableQuery, [switch]$EnableSubmission, [switch]$EnableConsumption, [switch]$EnableJudging, [switch]$EnableFollowUp, [switch]$CheckAccess, [switch]$FollowUpStrictFunction, [switch]$FollowUpTwoPhase, [switch]$FollowUpClaimParts, [switch]$FollowUpProseKind, [switch]$FollowUpProseFlat, [switch]$FollowUpScopeView, [switch]$FollowUpScopeColumns, [switch]$FollowUpIndexColumns, [switch]$FollowUpSelectedTable, [ValidateRange(0,65535)][int]$ProxyPort = 0)
 $ErrorActionPreference = 'Stop'
 if ($FollowUpIndexColumns -and (-not $FollowUpTwoPhase -or $FollowUpScopeView -or $FollowUpScopeColumns)) {
     throw 'Index columns requires two-phase and excludes both legacy scope switches. No key was read.'
@@ -12,7 +12,10 @@ if ($FollowUpSelectedTable -and (-not $FollowUpTwoPhase -or $FollowUpClaimParts)
 if ($FollowUpScopeView -and -not $FollowUpTwoPhase) {
     throw 'Scope view requires the approved two-phase mode. No key was read.'
 }
-if ($FollowUpProseKind -and -not $FollowUpTwoPhase) {
+if ($FollowUpProseKind -and $FollowUpProseFlat) {
+    throw 'Prose kind and flat formats are mutually exclusive. No key was read.'
+}
+if (($FollowUpProseKind -or $FollowUpProseFlat) -and -not $FollowUpTwoPhase) {
     throw 'Prose kind requires the approved two-phase mode. No key was read.'
 }
 if ($FollowUpClaimParts -and -not $FollowUpTwoPhase) {
@@ -72,6 +75,7 @@ try {
     if ($FollowUpClaimParts) { $taskArguments += '--followup-claim-parts' }
     if ($FollowUpSelectedTable) { $taskArguments += '--followup-selected-table' }
     if ($FollowUpProseKind) { $taskArguments += '--followup-prose-kind' }
+    if ($FollowUpProseFlat) { $taskArguments += '--followup-prose-flat' }
     if ($FollowUpScopeView) { $taskArguments += '--followup-scope-view' }
     if ($FollowUpScopeColumns) { $taskArguments += '--followup-scope-columns' }
     if ($FollowUpIndexColumns) { $taskArguments += '--followup-index-columns' }
